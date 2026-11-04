@@ -1,0 +1,34 @@
+node_modules
+.next
+.env.local
+# Dépendances
+node_modules/
+
+# Build et production
+.next/
+out/
+dist/
+build/
+
+# Variables d'environnement et secrets
+.env
+.env.local
+.env.*.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Fichiers système et éditeurs
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Cache
+.cache/
+.turbo/
+
+# Tests
+coverage/
