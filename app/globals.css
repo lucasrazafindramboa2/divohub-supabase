@@ -120,3 +120,22 @@ aside li { display: flex; justify-content: space-between; align-items: center; b
 .picker input[type=checkbox] { width: auto; }
 .picker .actions { display: flex; gap: 10px; justify-content: flex-end; margin: 0; }
 @media (max-width: 820px) { .msgs { grid-template-columns: minmax(0, 1fr); } }
+
+/* Réactions et réponses */
+.reacts { display: inline-flex; align-items: center; gap: 4px; }
+.react-wrap { position: relative; }
+.react { background: none; padding: 6px 10px; border-radius: 8px; color: var(--muted); }
+.react:hover { background: var(--bg); }
+.react.on { color: var(--accent); font-weight: 700; }
+.react-sum { background: var(--bg); border-radius: 999px; padding: 3px 10px; font-size: .85rem; }
+.emoji-pop { position: absolute; bottom: calc(100% + 4px); left: 0; display: flex; gap: 2px; background: #fff; border: 1px solid var(--line); border-radius: 999px; padding: 4px 8px; box-shadow: 0 6px 20px rgba(18,50,56,.18); z-index: 6; }
+.emoji-pop button { background: none; font-size: 1.35rem; padding: 2px 5px; border-radius: 50%; transition: transform .1s; }
+.emoji-pop button:hover { transform: scale(1.25); }
+.emoji-pop button.on { background: var(--bg); }
+.who-list { list-style: none; padding: 0; display: grid; gap: 10px; overflow-y: auto; }
+.who-list li { display: grid; gap: 2px; }
+.who-list span { color: var(--muted); font-size: .9rem; }
+.comment { display: grid; gap: 2px; }
+.comment-actions { display: flex; align-items: center; gap: 4px; font-size: .85rem; }
+.comment-actions .react, .comment-actions .ghost { padding: 2px 8px; font-size: .85rem; }
+.replies, .comment.reply { margin-left: 22px; padding-left: 12px; border-left: 2px solid var(--line); margin-top: 6px; }

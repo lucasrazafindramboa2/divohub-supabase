@@ -1,33 +1,39 @@
 'use client'
 import { useEffect, useMemo, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { ago, type Names, type Post } from '@/lib/types'
+import { ago, type Names, type Post, type Reaction } from '@/lib/types'
+import Reactions from './Reactions'
 
-type Comment = { id: string; user_id: string; content: string; created_at: string }
+type Comment = { id: string; user_id: string; parent_id: string | null; content: string; created_at: string; comment_reactions: Reaction[] }
 const KIND = { post: '', poll: 'Sondage', vote: 'Vote' }
 
-export default function PostCard({ post, userId, names, follows, onFollow, onChange }: {
+export default function PostCard({ post, userId, names, follows, onFollow, onChange, tick }: {
   post: Post; userId: string; names: Names; follows: string[]
-  onFollow: (id: string) => void; onChange: () => void
+  onFollow: (id: string) => void; onChange: () => void; tick: number
 }) {
   const supabase = useMemo(() => createClient(), [])
   const [open, setOpen] = useState(false)
   const [comments, setComments] = useState<Comment[]>([])
+  const [replyTo, setReplyTo] = useState<Comment | null>(null)
   const [text, setText] = useState('')
-  const liked = post.likes.some(l => l.user_id === userId)
   const nComments = post.comments[0]?.count ?? 0
   const myVote = post.poll_votes.find(v => v.user_id === userId)?.option_id
   const total = post.poll_votes.length
 
   useEffect(() => {
     if (!open) return
-    supabase.from('comments').select('*').eq('post_id', post.id).order('created_at')
+    supabase.from('comments').select('*, comment_reactions(user_id,emoji)').eq('post_id', post.id).order('created_at')
       .then(({ data }) => setComments((data as Comment[]) ?? []))
-  }, [open, nComments, post.id, supabase])
+  }, [open, nComments, tick, post.id, supabase])
 
-  async function like() {
-    if (liked) await supabase.from('likes').delete().match({ post_id: post.id, user_id: userId })
-    else await supabase.from('likes').insert({ post_id: post.id })
+  async function reactPost(emoji: string | null) {
+    if (emoji === null) await supabase.from('post_reactions').delete().match({ post_id: post.id, user_id: userId })
+    else await supabase.from('post_reactions').upsert({ post_id: post.id, emoji }, { onConflict: 'post_id,user_id' })
+    onChange()
+  }
+  async function reactComment(id: string, emoji: string | null) {
+    if (emoji === null) await supabase.from('comment_reactions').delete().match({ comment_id: id, user_id: userId })
+    else await supabase.from('comment_reactions').upsert({ comment_id: id, emoji }, { onConflict: 'comment_id,user_id' })
     onChange()
   }
   async function vote(option_id: string) {
@@ -37,14 +43,24 @@ export default function PostCard({ post, userId, names, follows, onFollow, onCha
   async function comment(e: React.FormEvent) {
     e.preventDefault()
     if (!text.trim()) return
-    await supabase.from('comments').insert({ post_id: post.id, content: text.trim() })
-    setText(''); onChange()
+    await supabase.from('comments').insert({ post_id: post.id, content: text.trim(), parent_id: replyTo?.id ?? null })
+    setText(''); setReplyTo(null); onChange()
   }
   async function remove() {
     if (!confirm('Supprimer cette publication ?')) return
     await supabase.from('posts').delete().eq('id', post.id)
     onChange()
   }
+
+  const item = (c: Comment, reply = false) => (
+    <div key={c.id} className={reply ? 'comment reply' : 'comment'}>
+      <p><strong>{names[c.user_id] ?? '…'}</strong> {c.content} <span className="sub">{ago(c.created_at)}</span></p>
+      <div className="comment-actions">
+        <Reactions reactions={c.comment_reactions} userId={userId} names={names} onReact={e => reactComment(c.id, e)} />
+        {!reply && <button className="ghost" onClick={() => setReplyTo(c)}>Répondre</button>}
+      </div>
+    </div>
+  )
 
   return (
     <article className="card">
@@ -80,17 +96,22 @@ export default function PostCard({ post, userId, names, follows, onFollow, onCha
       )}
 
       <footer className="actions">
-        <button className={liked ? 'like on' : 'like'} onClick={like}>{liked ? '♥' : '♡'} {post.likes.length}</button>
+        <Reactions reactions={post.post_reactions} userId={userId} names={names} onReact={reactPost} />
         <button className="ghost" onClick={() => setOpen(!open)}>Commentaires ({nComments})</button>
       </footer>
 
       {open && (
         <div className="comments">
-          {comments.map(c => (
-            <p key={c.id}><strong>{names[c.user_id] ?? '…'}</strong> {c.content} <span className="sub">{ago(c.created_at)}</span></p>
+          {comments.filter(c => !c.parent_id).map(c => (
+            <div key={c.id}>
+              {item(c)}
+              {comments.filter(r => r.parent_id === c.id).map(r => item(r, true))}
+            </div>
           ))}
           <form onSubmit={comment} className="row">
-            <input value={text} onChange={e => setText(e.target.value)} placeholder="Écrire un commentaire" maxLength={1000} />
+            <input value={text} onChange={e => setText(e.target.value)} maxLength={1000}
+              placeholder={replyTo ? `Répondre à ${names[replyTo.user_id] ?? '…'}` : 'Écrire un commentaire'} />
+            {replyTo && <button type="button" className="ghost" onClick={() => setReplyTo(null)}>Annuler</button>}
             <button className="go">Envoyer</button>
           </form>
         </div>

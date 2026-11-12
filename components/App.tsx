@@ -8,7 +8,8 @@ import PostCard from './PostCard'
 import Stories from './Stories'
 import Messages from './Messages'
 
-const TEXT = { like: 'a aimé votre publication', comment: 'a commenté votre publication', follow: 'a commencé à vous suivre' }
+const TEXT: Record<string, string> = { like: 'a aimé votre publication', comment: 'a commenté votre publication', follow: 'a commencé à vous suivre', reply: 'a répondu à votre commentaire' }
+const label = (n: Notif) => (n.type === 'reaction' ? `a réagi ${n.emoji ?? ''} à votre publication` : TEXT[n.type])
 type Tab = 'feed' | 'notifs' | 'messages'
 
 export default function App({ userId, username }: { userId: string; username: string }) {
@@ -22,13 +23,14 @@ export default function App({ userId, username }: { userId: string; username: st
   const [notifs, setNotifs] = useState<Notif[]>([])
   const [onlineIds, setOnlineIds] = useState<string[]>([])
   const [msgUnread, setMsgUnread] = useState(0)
+  const [tick, setTick] = useState(0)
   const [dm, setDm] = useState<{ id: string; n: number } | null>(null)
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   const loadFeed = async () => {
     const [p, n] = await Promise.all([
       supabase.from('posts')
-        .select('*, likes(user_id), comments(count), poll_options(id,label,position), poll_votes(user_id,option_id)')
+        .select('*, post_reactions(user_id,emoji), comments(count), poll_options(id,label,position), poll_votes(user_id,option_id)')
         .order('created_at', { ascending: false }).limit(50),
       supabase.from('profiles').select('id,username'),
     ])
@@ -55,8 +57,9 @@ export default function App({ userId, username }: { userId: string; username: st
   useEffect(() => {
     loadFeed(); loadFollows(); loadStories(); loadNotifs()
     const ch = supabase.channel('social')
-    for (const table of ['posts', 'likes', 'comments', 'poll_votes'])
+    for (const table of ['posts', 'post_reactions', 'comments', 'poll_votes'])
       ch.on('postgres_changes', { event: '*', schema: 'public', table }, refresh)
+    ch.on('postgres_changes', { event: '*', schema: 'public', table: 'comment_reactions' }, () => setTick(t => t + 1))
     ch.on('postgres_changes', { event: '*', schema: 'public', table: 'stories' }, loadStories)
     ch.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` }, loadNotifs)
     ch.subscribe()
@@ -119,7 +122,7 @@ export default function App({ userId, username }: { userId: string; username: st
               {posts.length === 0 && <p className="empty">Aucune publication. Écrivez la première.</p>}
               {posts.map(p => (
                 <PostCard key={p.id} post={p} userId={userId} names={names} follows={follows}
-                  onFollow={toggleFollow} onChange={loadFeed} />
+                  onFollow={toggleFollow} onChange={loadFeed} tick={tick} />
               ))}
             </>
           )}
@@ -128,7 +131,7 @@ export default function App({ userId, username }: { userId: string; username: st
               {notifs.length === 0 && <p className="empty">Aucune notification pour l’instant.</p>}
               {notifs.map(n => (
                 <li key={n.id} className={n.read ? '' : 'new'}>
-                  <strong>{names[n.actor_id] ?? '…'}</strong> {TEXT[n.type]}
+                  <strong>{names[n.actor_id] ?? '…'}</strong> {label(n)}
                   <span className="sub"> · {ago(n.created_at)}</span>
                 </li>
               ))}
