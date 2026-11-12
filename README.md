@@ -1,7 +1,7 @@
-# Messagerie Next.js + Supabase
+# Cercle : réseau social Next.js + Supabase
 
-1. Créez un projet sur https://supabase.com
-2. SQL Editor → collez et exécutez `supabase/schema.sql`
-3. (Dev) Authentication → Providers → Email → désactivez "Confirm email" pour tester vite
-4. `cp .env.local.example .env.local` et remplissez URL + clé anon (Project Settings → API)
+1. Supabase → SQL Editor → collez et exécutez `supabase/schema.sql`
+2. (Dev) Authentication → Email → désactivez "Confirm email"
+3. Supabase → SQL Editor → exécutez aussi `supabase/messaging.sql` (messagerie)
+4. `.env.local` avec l'URL et la clé anon du projet
 5. `npm install && npm run dev` → http://localhost:3000
