@@ -6,7 +6,7 @@ import { uploadImage } from '@/lib/upload'
 type Kind = 'post' | 'poll' | 'vote'
 const LABELS: Record<Kind, string> = { post: 'Publication', poll: 'Sondage oui / non', vote: 'Vote personnalisé' }
 
-export default function Composer({ userId, onDone }: { userId: string; onDone: () => void }) {
+export default function Composer({ userId, onDone, groupId }: { userId: string; onDone: () => void; groupId?: string }) {
   const supabase = useMemo(() => createClient(), [])
   const [kind, setKind] = useState<Kind>('post')
   const [content, setContent] = useState('')
@@ -25,7 +25,7 @@ export default function Composer({ userId, onDone }: { userId: string; onDone: (
     try {
       const image_url = file ? await uploadImage(file, userId) : null
       const { data, error } = await supabase.from('posts')
-        .insert({ kind, content: content.trim(), image_url }).select('id').single()
+        .insert({ kind, content: content.trim(), image_url, group_id: groupId ?? null }).select('id').single()
       if (error) throw error
       if (labels.length) {
         const r = await supabase.from('poll_options').insert(labels.map((label, position) => ({ post_id: data.id, label, position })))

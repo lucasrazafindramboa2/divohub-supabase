@@ -7,10 +7,11 @@ import Composer from './Composer'
 import PostCard from './PostCard'
 import Stories from './Stories'
 import Messages from './Messages'
+import Groups from './Groups'
 
 const TEXT: Record<string, string> = { like: 'a aimé votre publication', comment: 'a commenté votre publication', follow: 'a commencé à vous suivre', reply: 'a répondu à votre commentaire' }
 const label = (n: Notif) => (n.type === 'reaction' ? `a réagi ${n.emoji ?? ''} à votre publication` : TEXT[n.type])
-type Tab = 'feed' | 'notifs' | 'messages'
+type Tab = 'feed' | 'notifs' | 'messages' | 'groups'
 
 export default function App({ userId, username }: { userId: string; username: string }) {
   const supabase = useMemo(() => createClient(), [])
@@ -24,6 +25,8 @@ export default function App({ userId, username }: { userId: string; username: st
   const [onlineIds, setOnlineIds] = useState<string[]>([])
   const [msgUnread, setMsgUnread] = useState(0)
   const [tick, setTick] = useState(0)
+  const [ver, setVer] = useState(0)
+  const [pending, setPending] = useState(0)
   const [dm, setDm] = useState<{ id: string; n: number } | null>(null)
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
@@ -31,7 +34,7 @@ export default function App({ userId, username }: { userId: string; username: st
     const [p, n] = await Promise.all([
       supabase.from('posts')
         .select('*, post_reactions(user_id,emoji), comments(count), poll_options(id,label,position), poll_votes(user_id,option_id)')
-        .order('created_at', { ascending: false }).limit(50),
+        .is('group_id', null).order('created_at', { ascending: false }).limit(50),
       supabase.from('profiles').select('id,username'),
     ])
     setPosts((p.data as Post[]) ?? [])
@@ -52,7 +55,7 @@ export default function App({ userId, username }: { userId: string; username: st
     const { data } = await supabase.from('notifications').select('*').order('created_at', { ascending: false }).limit(40)
     setNotifs((data as Notif[]) ?? [])
   }
-  const refresh = () => { clearTimeout(timer.current); timer.current = setTimeout(loadFeed, 250) }
+  const refresh = () => { clearTimeout(timer.current); timer.current = setTimeout(() => { loadFeed(); setVer(v => v + 1) }, 250) }
 
   useEffect(() => {
     loadFeed(); loadFollows(); loadStories(); loadNotifs()
@@ -92,6 +95,7 @@ export default function App({ userId, username }: { userId: string; username: st
     router.push('/login'); router.refresh()
   }
   const onUnread = useCallback((n: number) => setMsgUnread(n), [])
+  const onPending = useCallback((n: number) => setPending(n), [])
   const openDm = (id: string) => { setTab('messages'); setDm({ id, n: Date.now() }) }
 
   const people = Object.entries(names).filter(([id]) => id !== userId)
@@ -105,6 +109,9 @@ export default function App({ userId, username }: { userId: string; username: st
           <button className={tab === 'messages' ? 'on' : ''} onClick={() => setTab('messages')}>
             Messages{msgUnread > 0 && <span className="badge">{msgUnread}</span>}
           </button>
+          <button className={tab === 'groups' ? 'on' : ''} onClick={() => setTab('groups')}>
+            Groupes{pending > 0 && <span className="badge">{pending}</span>}
+          </button>
           <button className={tab === 'notifs' ? 'on' : ''} onClick={() => setTab('notifs')}>
             Notifications{unread > 0 && <span className="badge">{unread}</span>}
           </button>
@@ -113,7 +120,7 @@ export default function App({ userId, username }: { userId: string; username: st
         <button className="ghost" onClick={logout}>Déconnexion</button>
       </header>
 
-      <div className={tab === 'messages' ? 'cols wide' : 'cols'}>
+      <div className={tab === 'messages' || tab === 'groups' ? 'cols wide' : 'cols'}>
         <main>
           {tab === 'feed' && (
             <>
@@ -142,8 +149,11 @@ export default function App({ userId, username }: { userId: string; username: st
             <Messages userId={userId} names={names} onlineIds={onlineIds} active={tab === 'messages'}
               dmRequest={dm} onUnread={onUnread} />
           </div>
+          <div hidden={tab !== 'groups'}>
+            <Groups userId={userId} names={names} follows={follows} onFollow={toggleFollow} ver={ver} onPending={onPending} />
+          </div>
         </main>
-        {tab !== 'messages' && (
+        {tab !== 'messages' && tab !== 'groups' && (
           <aside>
             <h2>Personnes ({onlineIds.length} en ligne)</h2>
             {people.length === 0 && <p className="sub">Invitez un ami à créer un compte.</p>}

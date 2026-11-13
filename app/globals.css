@@ -139,3 +139,16 @@ aside li { display: flex; justify-content: space-between; align-items: center; b
 .comment-actions { display: flex; align-items: center; gap: 4px; font-size: .85rem; }
 .comment-actions .react, .comment-actions .ghost { padding: 2px 8px; font-size: .85rem; }
 .replies, .comment.reply { margin-left: 22px; padding-left: 12px; border-left: 2px solid var(--line); margin-top: 6px; }
+
+/* Groupes */
+.tag { display: inline-block; background: var(--bg); color: var(--muted); border-radius: 999px; padding: 1px 8px; font-size: .72rem; font-weight: 600; vertical-align: middle; }
+.conv.active .tag { background: var(--ink-2); color: #cfe3df; }
+.gview { display: grid; gap: 14px; align-content: start; }
+.gview .card, .gview article { margin-bottom: 0; }
+.gview h2 { font-size: 1.15rem; }
+.side-sub { font-size: .85rem; color: var(--muted); margin-top: 10px; }
+.people { list-style: none; display: grid; gap: 4px; }
+.people li { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.people li:last-child { border: 0; }
+.choice-row { display: flex; gap: 10px; align-items: flex-start; padding: 10px; border: 1px solid var(--line); border-radius: 10px; cursor: pointer; }
+.choice-row input { width: auto; margin-top: 4px; }

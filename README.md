@@ -6,3 +6,11 @@
 4. `.env.local` avec l'URL et la clé anon du projet
 5. Supabase → SQL Editor → exécutez `supabase/reactions.sql` (réactions + réponses)
 6. `npm install && npm run dev` → http://localhost:3000
+
+
+plan payant:
+
+hebergement code
+hebergement supabase
+livekit
+gmail
