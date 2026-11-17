@@ -8,10 +8,12 @@ import PostCard from './PostCard'
 import Stories from './Stories'
 import Messages from './Messages'
 import Groups from './Groups'
+import Profile from './Profile'
+import Avatar from './Avatar'
 
 const TEXT: Record<string, string> = { like: 'a aimé votre publication', comment: 'a commenté votre publication', follow: 'a commencé à vous suivre', reply: 'a répondu à votre commentaire' }
 const label = (n: Notif) => (n.type === 'reaction' ? `a réagi ${n.emoji ?? ''} à votre publication` : TEXT[n.type])
-type Tab = 'feed' | 'notifs' | 'messages' | 'groups'
+type Tab = 'feed' | 'notifs' | 'messages' | 'groups' | 'profile'
 
 export default function App({ userId, username }: { userId: string; username: string }) {
   const supabase = useMemo(() => createClient(), [])
@@ -26,6 +28,11 @@ export default function App({ userId, username }: { userId: string; username: st
   const [msgUnread, setMsgUnread] = useState(0)
   const [tick, setTick] = useState(0)
   const [ver, setVer] = useState(0)
+<<<<<<< HEAD
+=======
+  const [avatars, setAvatars] = useState<Record<string, string | null>>({})
+  const [profileId, setProfileId] = useState(userId)
+>>>>>>> 287004c (profit)
   const [pending, setPending] = useState(0)
   const [dm, setDm] = useState<{ id: string; n: number } | null>(null)
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
@@ -35,10 +42,15 @@ export default function App({ userId, username }: { userId: string; username: st
       supabase.from('posts')
         .select('*, post_reactions(user_id,emoji), comments(count), poll_options(id,label,position), poll_votes(user_id,option_id)')
         .is('group_id', null).order('created_at', { ascending: false }).limit(50),
+<<<<<<< HEAD
       supabase.from('profiles').select('id,username'),
+=======
+      supabase.from('profiles').select('id,username,avatar_url'),
+>>>>>>> 287004c (profit)
     ])
     setPosts((p.data as Post[]) ?? [])
     setNames(Object.fromEntries((n.data ?? []).map(x => [x.id, x.username])))
+    setAvatars(Object.fromEntries((n.data ?? []).map(x => [x.id, x.avatar_url])))
   }
   const loadFollows = async () => {
     const { data } = await supabase.from('follows').select('following_id').eq('follower_id', userId)
@@ -96,6 +108,10 @@ export default function App({ userId, username }: { userId: string; username: st
   }
   const onUnread = useCallback((n: number) => setMsgUnread(n), [])
   const onPending = useCallback((n: number) => setPending(n), [])
+<<<<<<< HEAD
+=======
+  const openProfile = (id: string) => { setProfileId(id); setTab('profile') }
+>>>>>>> 287004c (profit)
   const openDm = (id: string) => { setTab('messages'); setDm({ id, n: Date.now() }) }
 
   const people = Object.entries(names).filter(([id]) => id !== userId)
@@ -116,7 +132,9 @@ export default function App({ userId, username }: { userId: string; username: st
             Notifications{unread > 0 && <span className="badge">{unread}</span>}
           </button>
         </nav>
-        <span className="me">{username}</span>
+        <button className="me" onClick={() => openProfile(userId)} title="Mon profil">
+          <Avatar url={avatars[userId]} name={username} size={28} /><span className="me-name">{username}</span>
+        </button>
         <button className="ghost" onClick={logout}>Déconnexion</button>
       </header>
 
@@ -129,10 +147,12 @@ export default function App({ userId, username }: { userId: string; username: st
               {posts.length === 0 && <p className="empty">Aucune publication. Écrivez la première.</p>}
               {posts.map(p => (
                 <PostCard key={p.id} post={p} userId={userId} names={names} follows={follows}
-                  onFollow={toggleFollow} onChange={loadFeed} tick={tick} />
+                  onFollow={toggleFollow} onChange={loadFeed} tick={tick}
+                  avatars={avatars} onProfile={openProfile} />
               ))}
             </>
           )}
+          {tab === 'profile' && <Profile profileId={profileId} userId={userId} onChanged={loadFeed} />}
           {tab === 'notifs' && (
             <ul className="notifs">
               {notifs.length === 0 && <p className="empty">Aucune notification pour l’instant.</p>}
@@ -160,7 +180,11 @@ export default function App({ userId, username }: { userId: string; username: st
             <ul>
               {people.map(([id, name]) => (
                 <li key={id}>
-                  <span className="who"><span className={onlineIds.includes(id) ? 'dot' : 'dot off'} />{name}</span>
+                  <span className="who">
+                    <span className={onlineIds.includes(id) ? 'dot' : 'dot off'} />
+                    <Avatar url={avatars[id]} name={name} size={26} />
+                    <button className="plain" onClick={() => openProfile(id)}>{name}</button>
+                  </span>
                   <span className="btns">
                     <button className="ghost" onClick={() => openDm(id)}>Message</button>
                     <button className={follows.includes(id) ? 'ghost' : 'go'} onClick={() => toggleFollow(id)}>

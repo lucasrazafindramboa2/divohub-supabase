@@ -3,13 +3,15 @@ import { useEffect, useMemo, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { ago, type Names, type Post, type Reaction } from '@/lib/types'
 import Reactions from './Reactions'
+import Avatar from './Avatar'
 
 type Comment = { id: string; user_id: string; parent_id: string | null; content: string; created_at: string; comment_reactions: Reaction[] }
 const KIND = { post: '', poll: 'Sondage', vote: 'Vote' }
 
-export default function PostCard({ post, userId, names, follows, onFollow, onChange, tick }: {
+export default function PostCard({ post, userId, names, follows, onFollow, onChange, tick, avatars, onProfile }: {
   post: Post; userId: string; names: Names; follows: string[]
   onFollow: (id: string) => void; onChange: () => void; tick: number
+  avatars?: Record<string, string | null>; onProfile?: (id: string) => void
 }) {
   const supabase = useMemo(() => createClient(), [])
   const [open, setOpen] = useState(false)
@@ -65,8 +67,11 @@ export default function PostCard({ post, userId, names, follows, onFollow, onCha
   return (
     <article className="card">
       <header className="post-head">
-        <div>
-          <strong>{names[post.user_id] ?? '…'}</strong>
+        <div className="author">
+          <Avatar url={avatars?.[post.user_id]} name={names[post.user_id] ?? '?'} size={34} />
+          {onProfile
+            ? <button className="plain" onClick={() => onProfile(post.user_id)}>{names[post.user_id] ?? '…'}</button>
+            : <strong>{names[post.user_id] ?? '…'}</strong>}
           <span className="sub"> · {ago(post.created_at)}{KIND[post.kind] && ` · ${KIND[post.kind]}`}</span>
         </div>
         {post.user_id === userId

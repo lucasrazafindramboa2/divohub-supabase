@@ -25,3 +25,10 @@ export const ago = (d: string) => {
   if (s < 86400) return `${Math.floor(s / 3600)} h`
   return `${Math.floor(s / 86400)} j`
 }
+
+export type Group = {
+  id: string; name: string; description: string | null; is_private: boolean
+  created_by: string; created_at: string
+}
+export const POST_SELECT =
+  '*, post_reactions(user_id,emoji), comments(count), poll_options(id,label,position), poll_votes(user_id,option_id)'
