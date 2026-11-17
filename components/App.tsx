@@ -103,14 +103,11 @@ export default function App({ userId, username }: { userId: string; username: st
   }
   const onUnread = useCallback((n: number) => setMsgUnread(n), [])
   const onPending = useCallback((n: number) => setPending(n), [])
-<<<<<<< HEAD
-=======
+
   const openProfile = (id: string) => { setProfileId(id); setTab('profile') }
-<<<<<<< HEAD
->>>>>>> 287004c (profit)
-=======
+
   const openGroup = (id: string) => { setGroupOpen({ id, n: Date.now() }); setTab('groups') }
->>>>>>> 3ac1c21 (profil suite)
+
   const openDm = (id: string) => { setTab('messages'); setDm({ id, n: Date.now() }) }
 
   const people = Object.entries(names).filter(([id]) => id !== userId)
