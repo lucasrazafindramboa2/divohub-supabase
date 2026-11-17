@@ -9,11 +9,12 @@ import Stories from './Stories'
 import Messages from './Messages'
 import Groups from './Groups'
 import Profile from './Profile'
+import Wallet from './Wallet'
 import Avatar from './Avatar'
 
 const TEXT: Record<string, string> = { like: 'a aimé votre publication', comment: 'a commenté votre publication', follow: 'a commencé à vous suivre', reply: 'a répondu à votre commentaire' }
 const label = (n: Notif) => (n.type === 'reaction' ? `a réagi ${n.emoji ?? ''} à votre publication` : TEXT[n.type])
-type Tab = 'feed' | 'notifs' | 'messages' | 'groups' | 'profile'
+type Tab = 'feed' | 'notifs' | 'messages' | 'groups' | 'profile' | 'wallet'
 
 export default function App({ userId, username }: { userId: string; username: string }) {
   const supabase = useMemo(() => createClient(), [])
@@ -30,7 +31,6 @@ export default function App({ userId, username }: { userId: string; username: st
   const [ver, setVer] = useState(0)
   const [avatars, setAvatars] = useState<Record<string, string | null>>({})
   const [profileId, setProfileId] = useState(userId)
-
   const [groupOpen, setGroupOpen] = useState<{ id: string; n: number } | null>(null)
   const [pending, setPending] = useState(0)
   const [dm, setDm] = useState<{ id: string; n: number } | null>(null)
@@ -85,6 +85,9 @@ export default function App({ userId, username }: { userId: string; username: st
     return () => { supabase.removeChannel(ch) }
   }, [supabase, userId, username])
 
+  // Retour de paiement Stripe : ouvre directement le portefeuille
+  useEffect(() => { if (new URLSearchParams(window.location.search).has('wallet')) setTab('wallet') }, [])
+
   const unread = notifs.filter(n => !n.read).length
   useEffect(() => {
     if (tab === 'notifs' && unread > 0)
@@ -103,11 +106,8 @@ export default function App({ userId, username }: { userId: string; username: st
   }
   const onUnread = useCallback((n: number) => setMsgUnread(n), [])
   const onPending = useCallback((n: number) => setPending(n), [])
-
   const openProfile = (id: string) => { setProfileId(id); setTab('profile') }
-
   const openGroup = (id: string) => { setGroupOpen({ id, n: Date.now() }); setTab('groups') }
-
   const openDm = (id: string) => { setTab('messages'); setDm({ id, n: Date.now() }) }
 
   const people = Object.entries(names).filter(([id]) => id !== userId)
@@ -124,6 +124,7 @@ export default function App({ userId, username }: { userId: string; username: st
           <button className={tab === 'groups' ? 'on' : ''} onClick={() => setTab('groups')}>
             Groupes{pending > 0 && <span className="badge">{pending}</span>}
           </button>
+          <button className={tab === 'wallet' ? 'on' : ''} onClick={() => setTab('wallet')}>Portefeuille</button>
           <button className={tab === 'notifs' ? 'on' : ''} onClick={() => setTab('notifs')}>
             Notifications{unread > 0 && <span className="badge">{unread}</span>}
           </button>
@@ -152,6 +153,7 @@ export default function App({ userId, username }: { userId: string; username: st
             <Profile profileId={profileId} userId={userId} onChanged={loadFeed} names={names} avatars={avatars}
               follows={follows} onFollow={toggleFollow} onProfile={openProfile} onOpenGroup={openGroup} ver={ver} />
           )}
+          {tab === 'wallet' && <Wallet userId={userId} />}
           {tab === 'notifs' && (
             <ul className="notifs">
               {notifs.length === 0 && <p className="empty">Aucune notification pour l’instant.</p>}

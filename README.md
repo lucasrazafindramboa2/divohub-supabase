@@ -14,3 +14,14 @@ hebergement code
 hebergement supabase
 livekit
 gmail
+
+stripe:
+Visa – Paiement accepté
+Succès
+
+4242 4242 4242 4242
+ Copier le numéroChamp	Valeur
+Date d'expiration	12/34
+CVC	123
+Nom	N'importe quel nom
+Code postal	101

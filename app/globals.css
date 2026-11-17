@@ -204,3 +204,19 @@ select { font: inherit; border: 1px solid #cfdcda; border-radius: 8px; padding: 
 .profile-posts { display: grid; gap: 14px; }
 .profile-posts article { margin-bottom: 0; }
 .search { margin-bottom: 10px; }
+
+/* Portefeuille */
+.wallet { display: grid; gap: 14px; }
+.wallet .card { margin-bottom: 0; display: grid; gap: 10px; }
+.wallet h2 { font-size: 1.05rem; }
+.balance b { font-size: 2.4rem; line-height: 1.1; }
+.amounts { display: flex; gap: 8px; flex-wrap: wrap; }
+.amounts button { background: var(--bg); border: 1px solid #cfdcda; border-radius: 10px; padding: 10px 18px; font-weight: 600; color: var(--text); }
+.amounts button:hover:not(:disabled) { border-color: var(--accent); }
+.amounts button:disabled { opacity: .5; cursor: wait; }
+.notice { padding: 10px 14px; border-radius: 10px; background: #e3f1ef; }
+.notice.ok { background: #d8f3e3; }
+.notice.error { background: #fbe4e1; color: #c0392b; }
+.tx-right { display: flex; align-items: center; gap: 10px; }
+.tx-amount { font-weight: 700; }
+.tx-amount.plus { color: var(--accent); }
