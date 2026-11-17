@@ -192,3 +192,15 @@ select { font: inherit; border: 1px solid #cfdcda; border-radius: 8px; padding: 
   .me-name { display: none; }
   .cover { height: 140px; }
 }
+
+/* Profil : publications et relations */
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(92px, 1fr)); gap: 6px; padding: 8px; }
+.stat { background: none; border-radius: 10px; padding: 10px 4px; display: grid; gap: 2px; text-align: center; color: var(--text); }
+.stat b { font-size: 1.25rem; }
+.stat span { font-size: .78rem; color: var(--muted); }
+.stat:hover { background: var(--bg); }
+.stat.on { background: var(--ink); color: #fff; }
+.stat.on span { color: #cfe3df; }
+.profile-posts { display: grid; gap: 14px; }
+.profile-posts article { margin-bottom: 0; }
+.search { margin-bottom: 10px; }

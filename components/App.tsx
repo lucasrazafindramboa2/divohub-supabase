@@ -28,11 +28,10 @@ export default function App({ userId, username }: { userId: string; username: st
   const [msgUnread, setMsgUnread] = useState(0)
   const [tick, setTick] = useState(0)
   const [ver, setVer] = useState(0)
-<<<<<<< HEAD
-=======
   const [avatars, setAvatars] = useState<Record<string, string | null>>({})
   const [profileId, setProfileId] = useState(userId)
->>>>>>> 287004c (profit)
+
+  const [groupOpen, setGroupOpen] = useState<{ id: string; n: number } | null>(null)
   const [pending, setPending] = useState(0)
   const [dm, setDm] = useState<{ id: string; n: number } | null>(null)
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
@@ -42,11 +41,7 @@ export default function App({ userId, username }: { userId: string; username: st
       supabase.from('posts')
         .select('*, post_reactions(user_id,emoji), comments(count), poll_options(id,label,position), poll_votes(user_id,option_id)')
         .is('group_id', null).order('created_at', { ascending: false }).limit(50),
-<<<<<<< HEAD
-      supabase.from('profiles').select('id,username'),
-=======
       supabase.from('profiles').select('id,username,avatar_url'),
->>>>>>> 287004c (profit)
     ])
     setPosts((p.data as Post[]) ?? [])
     setNames(Object.fromEntries((n.data ?? []).map(x => [x.id, x.username])))
@@ -111,7 +106,11 @@ export default function App({ userId, username }: { userId: string; username: st
 <<<<<<< HEAD
 =======
   const openProfile = (id: string) => { setProfileId(id); setTab('profile') }
+<<<<<<< HEAD
 >>>>>>> 287004c (profit)
+=======
+  const openGroup = (id: string) => { setGroupOpen({ id, n: Date.now() }); setTab('groups') }
+>>>>>>> 3ac1c21 (profil suite)
   const openDm = (id: string) => { setTab('messages'); setDm({ id, n: Date.now() }) }
 
   const people = Object.entries(names).filter(([id]) => id !== userId)
@@ -152,7 +151,10 @@ export default function App({ userId, username }: { userId: string; username: st
               ))}
             </>
           )}
-          {tab === 'profile' && <Profile profileId={profileId} userId={userId} onChanged={loadFeed} />}
+          {tab === 'profile' && (
+            <Profile profileId={profileId} userId={userId} onChanged={loadFeed} names={names} avatars={avatars}
+              follows={follows} onFollow={toggleFollow} onProfile={openProfile} onOpenGroup={openGroup} ver={ver} />
+          )}
           {tab === 'notifs' && (
             <ul className="notifs">
               {notifs.length === 0 && <p className="empty">Aucune notification pour l’instant.</p>}
@@ -170,7 +172,7 @@ export default function App({ userId, username }: { userId: string; username: st
               dmRequest={dm} onUnread={onUnread} />
           </div>
           <div hidden={tab !== 'groups'}>
-            <Groups userId={userId} names={names} follows={follows} onFollow={toggleFollow} ver={ver} onPending={onPending} />
+            <Groups userId={userId} names={names} follows={follows} onFollow={toggleFollow} ver={ver} onPending={onPending} openRequest={groupOpen} />
           </div>
         </main>
         {tab !== 'messages' && tab !== 'groups' && (

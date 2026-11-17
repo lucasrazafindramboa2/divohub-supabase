@@ -3,14 +3,24 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { uploadImage } from '@/lib/upload'
 import { COUNTRIES, countryName, flagUrl } from '@/lib/countries'
+import { POST_SELECT, type Post } from '@/lib/types'
 import Avatar from './Avatar'
+import PostCard from './PostCard'
 
 type Basic = { id: string; username: string; avatar_url: string | null; is_private: boolean }
 type Details = { first_name: string | null; last_name: string | null; gender: string | null; nationality: string | null; cover_url: string | null }
 type Photo = { id: string; kind: 'avatar' | 'cover'; url: string; created_at: string }
 const GENDERS: Record<string, string> = { homme: 'Homme', femme: 'Femme', autre: 'Autre', non_precise: 'Non précisé' }
 
-export default function Profile({ profileId, userId, onChanged }: { profileId: string; userId: string; onChanged: () => void }) {
+type GroupRef = { id: string; name: string; is_private: boolean; role: string }
+type Tab = 'posts' | 'friends' | 'groups' | 'following' | 'followers' | 'photos'
+const norm = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+
+export default function Profile({ profileId, userId, onChanged, names, avatars, follows, onFollow, onProfile, onOpenGroup, ver }: {
+  profileId: string; userId: string; onChanged: () => void; names: Record<string, string>
+  avatars: Record<string, string | null>; follows: string[]; onFollow: (id: string) => void
+  onProfile: (id: string) => void; onOpenGroup: (id: string) => void; ver: number
+}) {
   const supabase = useMemo(() => createClient(), [])
   const own = profileId === userId
   const [basic, setBasic] = useState<Basic | null>(null)
@@ -22,6 +32,12 @@ export default function Profile({ profileId, userId, onChanged }: { profileId: s
   const [view, setView] = useState<Photo | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [tab, setTab] = useState<Tab>('posts')
+  const [posts, setPosts] = useState<Post[]>([])
+  const [following, setFollowing] = useState<string[]>([])
+  const [followers, setFollowers] = useState<string[]>([])
+  const [groups, setGroups] = useState<GroupRef[]>([])
+  const [q, setQ] = useState('')
 
   const load = useCallback(async () => {
     const [b, det, ph] = await Promise.all([
@@ -31,7 +47,23 @@ export default function Profile({ profileId, userId, onChanged }: { profileId: s
     ])
     setBasic(b.data as Basic | null); setD(det.data as Details | null); setPhotos((ph.data as Photo[]) ?? [])
   }, [profileId, supabase])
-  useEffect(() => { setBasic(null); setEditing(false); setView(null); setError(''); load() }, [load])
+  useEffect(() => { setBasic(null); setEditing(false); setView(null); setError(''); setTab('posts'); setQ(''); load() }, [load])
+
+  // Publications, abonnements et groupes (filtrés par les règles de sécurité de la base)
+  const loadSocial = useCallback(async () => {
+    const [po, fo, gr] = await Promise.all([
+      supabase.from('posts').select(POST_SELECT).eq('user_id', profileId).order('created_at', { ascending: false }).limit(50),
+      supabase.from('follows').select('follower_id,following_id').or(`follower_id.eq.${profileId},following_id.eq.${profileId}`),
+      supabase.from('group_members').select('role, groups(id,name,is_private)').eq('user_id', profileId),
+    ])
+    setPosts((po.data as Post[]) ?? [])
+    const rows = fo.data ?? []
+    setFollowing(rows.filter(r => r.follower_id === profileId).map(r => r.following_id))
+    setFollowers(rows.filter(r => r.following_id === profileId).map(r => r.follower_id))
+    const g = (gr.data ?? []) as unknown as { role: string; groups: Omit<GroupRef, 'role'> | null }[]
+    setGroups(g.filter(x => x.groups).map(x => ({ ...x.groups!, role: x.role })))
+  }, [profileId, supabase])
+  useEffect(() => { loadSocial() }, [loadSocial, ver, follows])
 
   function startEdit() {
     setForm({
@@ -97,6 +129,24 @@ export default function Profile({ profileId, userId, onChanged }: { profileId: s
     <input type="file" accept="image/*" hidden onChange={e => { addPhoto(kind, e.target.files?.[0]); e.target.value = '' }} />
   )
 
+  const friends = following.filter(id => followers.includes(id))
+  const shownFriends = friends.filter(id => norm(names[id] ?? '').includes(norm(q.trim())))
+  const TABS = [['posts', 'Publications', posts.length], ['friends', 'Amis', friends.length], ['groups', 'Groupes', groups.length],
+    ['following', 'Abonnements', following.length], ['followers', 'Abonnés', followers.length], ['photos', 'Photos', photos.length]] as const
+  const person = (id: string) => (
+    <li key={id}>
+      <span className="who">
+        <Avatar url={avatars[id]} name={names[id] ?? '?'} size={34} />
+        <button className="plain" onClick={() => onProfile(id)}>{names[id] ?? '…'}</button>
+      </span>
+      {id !== userId && (
+        <button className={follows.includes(id) ? 'ghost' : 'go'} onClick={() => onFollow(id)}>
+          {follows.includes(id) ? 'Abonné' : 'Suivre'}
+        </button>
+      )}
+    </li>
+  )
+
   return (
     <div className="profile">
       <section className="card pcard">
@@ -156,6 +206,66 @@ export default function Profile({ profileId, userId, onChanged }: { profileId: s
       )}
 
       {!locked && (
+        <>
+          <section className="card stats">
+            {TABS.map(([k, label, n]) => (
+              <button key={k} className={tab === k ? 'stat on' : 'stat'} onClick={() => setTab(k)}><b>{n}</b><span>{label}</span></button>
+            ))}
+          </section>
+
+          {tab === 'posts' && (
+            <div className="profile-posts">
+              {posts.length === 0 && <p className="empty">Aucune publication.</p>}
+              {posts.map(p => (
+                <PostCard key={p.id} post={p} userId={userId} names={names} follows={follows} onFollow={onFollow}
+                  onChange={loadSocial} tick={ver} avatars={avatars} onProfile={onProfile} />
+              ))}
+            </div>
+          )}
+
+          {tab === 'friends' && (
+            <section className="card">
+              <input className="search" type="search" placeholder="Rechercher un ami" value={q} onChange={e => setQ(e.target.value)} />
+              <ul className="people">
+                {friends.length === 0 && <li className="sub">Aucun ami pour l’instant. Deux personnes deviennent amies en s’abonnant l’une à l’autre.</li>}
+                {friends.length > 0 && shownFriends.length === 0 && <li className="sub">Aucun ami ne correspond à « {q} ».</li>}
+                {shownFriends.map(person)}
+              </ul>
+            </section>
+          )}
+
+          {tab === 'groups' && (
+            <ul className="card people">
+              {groups.length === 0 && <li className="sub">Aucun groupe.</li>}
+              {groups.map(g => (
+                <li key={g.id}>
+                  <button className="plain" onClick={() => onOpenGroup(g.id)}>{g.name}</button>
+                  <span className="btns">
+                    {g.is_private && <span className="tag">Privé</span>}
+                    {g.role === 'admin' && <span className="tag">Admin</span>}
+                    <button className="ghost" onClick={() => onOpenGroup(g.id)}>Ouvrir</button>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {tab === 'following' && (
+            <ul className="card people">
+              {following.length === 0 && <li className="sub">Aucun abonnement.</li>}
+              {following.map(person)}
+            </ul>
+          )}
+          {tab === 'followers' && (
+            <ul className="card people">
+              {followers.length === 0 && <li className="sub">Aucun abonné.</li>}
+              {followers.map(person)}
+            </ul>
+          )}
+        </>
+      )}
+
+      {!locked && tab === 'photos' && (
         <section className="card">
           <header className="post-head">
             <h2>Galerie ({photos.length})</h2>

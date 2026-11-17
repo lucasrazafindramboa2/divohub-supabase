@@ -4,9 +4,9 @@ import { createClient } from '@/lib/supabase/client'
 import type { Group, Names } from '@/lib/types'
 import GroupView from './GroupView'
 
-export default function Groups({ userId, names, follows, onFollow, ver, onPending }: {
+export default function Groups({ userId, names, follows, onFollow, ver, onPending, openRequest }: {
   userId: string; names: Names; follows: string[]; onFollow: (id: string) => void
-  ver: number; onPending: (n: number) => void
+  ver: number; onPending: (n: number) => void; openRequest: { id: string; n: number } | null
 }) {
   const supabase = useMemo(() => createClient(), [])
   const [groups, setGroups] = useState<Group[]>([])
@@ -46,6 +46,7 @@ export default function Groups({ userId, names, follows, onFollow, ver, onPendin
   const pendingBy = (gid: string) => (roles[gid] === 'admin' ? reqs.filter(r => r.group_id === gid).length : 0)
   const pending = groups.reduce((n, g) => n + pendingBy(g.id), 0)
   useEffect(() => { onPending(pending) }, [pending, onPending])
+  useEffect(() => { if (openRequest) setCurrentId(openRequest.id) }, [openRequest])
 
   async function create(e: React.FormEvent) {
     e.preventDefault()
