@@ -261,3 +261,14 @@ select { font: inherit; border: 1px solid #cfdcda; border-radius: 8px; padding: 
 .plain-list { list-style: none; padding: 0; display: grid; gap: 2px; }
 .wrap { flex-wrap: wrap; }
 .tag.warn { background: #fff1d6; color: #9a6200; }
+
+/* Suggestions d'amis */
+.sugg { display: grid; gap: 10px; }
+.sugg h2 { font-size: 1.05rem; }
+.sugg-row { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 6px; }
+.sugg-card { position: relative; flex: 0 0 150px; scroll-snap-align: start; display: grid; justify-items: center; align-content: start; gap: 6px; text-align: center; padding: 16px 10px 12px; border: 1px solid var(--line); border-radius: 12px; }
+.sugg-card .sub { min-height: 2.4em; }
+.sugg-card .go, .sugg-card .ghost { width: 100%; }
+.sugg-card .x { position: absolute; top: 2px; right: 4px; background: none; color: var(--muted); font-size: 1.3rem; line-height: 1; padding: 2px 8px; }
+.link.small { font-size: .8rem; justify-self: start; }
+.field { display: grid; gap: 4px; font-size: .88rem; color: var(--muted); }

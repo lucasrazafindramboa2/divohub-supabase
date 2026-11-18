@@ -51,7 +51,9 @@ export default function Profile({ profileId, userId, onChanged, names, avatars, 
     ])
     setBasic(b.data as Basic | null); setD(det.data as Details | null); setPhotos((ph.data as Photo[]) ?? [])
   }, [profileId, supabase])
-  useEffect(() => { setBasic(null); setEditing(false); setView(null); setError(''); setTab('posts'); setQ(''); load() }, [load])
+  useEffect(() => { setBasic(null); setEditing(false); setView(null); setError(''); setTab('posts'); setQ(''); load()
+    if (profileId !== userId) supabase.rpc('profile_view_record', { p_user: profileId }).then(() => {})
+  }, [load])
 
   // Publications, abonnements et groupes (filtrés par les règles de sécurité de la base)
   const loadSocial = useCallback(async () => {

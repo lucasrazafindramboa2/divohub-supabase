@@ -8,7 +8,10 @@ export default async function Home() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
   const { data: profile } = await supabase.from('profiles').select('username, nationality').eq('id', user.id).single()
-  // Compte sans nationalité (ex. première connexion Google) : étape de complétion
-  if (profile && !profile.nationality) return <CompleteProfile userId={user.id} username={profile.username} />
+  const { data: priv } = await supabase.from('user_private').select('user_id').eq('user_id', user.id).maybeSingle()
+  // Nationalité ou date de naissance manquante (ex. connexion Google, comptes anciens) : étape de complétion
+  if (profile && (!profile.nationality || !priv)) {
+    return <CompleteProfile userId={user.id} username={profile.username} needsNationality={!profile.nationality} needsBirthDate={!priv} />
+  }
   return <App userId={user.id} username={profile?.username ?? 'Anonyme'} />
 }

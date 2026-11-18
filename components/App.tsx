@@ -12,6 +12,7 @@ import Profile from './Profile'
 import Wallet from './Wallet'
 import Subscription from './Subscription'
 import Admin from './Admin'
+import Suggestions from './Suggestions'
 import Avatar from './Avatar'
 import { CountriesContext } from '@/lib/countryContext'
 
@@ -160,6 +161,7 @@ export default function App({ userId, username }: { userId: string; username: st
             <>
               <Stories userId={userId} names={names} stories={stories} follows={follows} onChange={loadStories} />
               <Composer userId={userId} onDone={loadFeed} />
+              <Suggestions userId={userId} onProfile={openProfile} refreshKey={notifs.length} />
               {posts.length === 0 && <p className="empty">Aucune publication. Écrivez la première.</p>}
               {posts.map(p => (
                 <PostCard key={p.id} post={p} userId={userId} names={names} follows={follows}

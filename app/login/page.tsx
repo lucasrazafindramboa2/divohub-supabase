@@ -15,6 +15,7 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [username, setUsername] = useState('')
   const [nationality, setNationality] = useState('')
+  const [birthDate, setBirthDate] = useState('')
   const [code, setCode] = useState('')
   const [error, setError] = useState('')
   const [info, setInfo] = useState('')
@@ -62,8 +63,9 @@ export default function Login() {
       const value = normalizeEmail(email)
       if (mode === 'signup') {
         if (!(await checkEmail(value))) return
+        if (!birthDate || birthDate > new Date().toISOString().slice(0, 10) || birthDate < '1900-01-01') return setError('Date de naissance invalide.')
         const { data, error } = await supabase.auth.signUp({
-          email: value, password, options: { data: { username: username.trim(), nationality } },
+          email: value, password, options: { data: { username: username.trim(), nationality, birth_date: birthDate } },
         })
         if (error) return setError(error.status === 429 ? 'Trop de tentatives. Patientez quelques minutes.' : error.message)
         // Adresse déjà inscrite : Supabase renvoie un utilisateur sans identité, sans erreur
@@ -148,6 +150,10 @@ export default function Login() {
               {COUNTRIES.map(c => <option key={c.code} value={c.code}>{c.name}</option>)}
             </select>
             <p className="sub">Votre nationalité s’affiche sous forme de drapeau à côté de votre photo et pourra servir à adapter les publicités. Avec Google, vous la choisirez juste après.</p>
+            <label className="field">Date de naissance
+              <input type="date" value={birthDate} min="1900-01-01" max={new Date().toISOString().slice(0, 10)} onChange={e => setBirthDate(e.target.value)} required />
+            </label>
+            <p className="sub">Votre date de naissance reste privée : elle sert à protéger les mineurs. Elle ne pourra pas être modifiée ensuite.</p>
           </>
         )}
         <input type="email" placeholder="E-mail" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} required />
