@@ -246,3 +246,18 @@ select { font: inherit; border: 1px solid #cfdcda; border-radius: 8px; padding: 
 .code-input { text-align: center; font-size: 1.5rem; letter-spacing: .4em; }
 .login button[type=submit]:disabled { opacity: .6; cursor: wait; }
 .link:disabled { opacity: .5; cursor: default; text-decoration: none; }
+
+/* Signalements et modération */
+.reasons { display: grid; gap: 2px; overflow-y: auto; }
+.reason-row { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 8px; cursor: pointer; }
+.reason-row:hover { background: var(--bg); }
+.reason-row input { width: auto; }
+.admin { display: grid; gap: 14px; }
+.admin .card { margin-bottom: 0; }
+.rcard { display: grid; gap: 10px; }
+.rhead { background: none; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; text-align: left; color: inherit; padding: 0; width: 100%; }
+.rbody { display: grid; gap: 10px; border-top: 1px solid var(--line); padding-top: 10px; }
+.quote { background: var(--bg); border-radius: 10px; padding: 10px 12px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.plain-list { list-style: none; padding: 0; display: grid; gap: 2px; }
+.wrap { flex-wrap: wrap; }
+.tag.warn { background: #fff1d6; color: #9a6200; }

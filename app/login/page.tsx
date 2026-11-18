@@ -78,6 +78,7 @@ export default function Login() {
             setEmail(value); setMode('verify'); setInfo('Votre adresse n’est pas encore confirmée.'); await resend(value)
             return
           }
+          if (error.code === 'user_banned') return setError('Ce compte est suspendu par la modération.')
           return setError('E-mail ou mot de passe incorrect.')
         }
         goHome()

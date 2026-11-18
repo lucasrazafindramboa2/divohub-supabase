@@ -36,3 +36,11 @@ Date d'expiration	12/34
 CVC	123
 Nom	N'importe quel nom
 Code postal	101
+
+-- ------------------------------------------------------------
+-- CRÉER UN ADMINISTRATEUR (à exécuter à part, avec votre adresse) :
+--   insert into public.admins (user_id)
+--   select id from auth.users where email = 'votre-adresse@exemple.com';
+-- Pour retirer ses droits :
+--   delete from public.admins where user_id = (select id from auth.users where email = 'votre-adresse@exemple.com');
+-- ------------------------------------------------------------

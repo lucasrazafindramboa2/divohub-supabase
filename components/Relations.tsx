@@ -1,6 +1,8 @@
 'use client'
+import { useState } from 'react'
 import type { useRelations } from '@/lib/useRelations'
 import Avatar from './Avatar'
+import ReportDialog from './ReportDialog'
 
 type Rel = ReturnType<typeof useRelations>
 
@@ -8,6 +10,7 @@ type Rel = ReturnType<typeof useRelations>
 export function RelationBar({ profileId, rel, follows, onFollow }: {
   profileId: string; rel: Rel; follows: string[]; onFollow: (id: string) => void
 }) {
+  const [reporting, setReporting] = useState(false)
   const following = follows.includes(profileId)
   return (
     <div className="relbar">
@@ -34,9 +37,11 @@ export function RelationBar({ profileId, rel, follows, onFollow }: {
           )}
           <button className={following ? 'ghost' : 'go'} onClick={() => onFollow(profileId)}>{following ? 'Abonné' : 'Suivre'}</button>
           <button className="ghost danger" onClick={() => rel.block(profileId)}>Bloquer</button>
+          <button className="ghost" onClick={() => setReporting(true)}>Signaler</button>
         </>
       )}
       {rel.error && <p className="error">{rel.error}</p>}
+      {reporting && <ReportDialog type="user" targetId={profileId} label="ce compte" onClose={() => setReporting(false)} />}
     </div>
   )
 }

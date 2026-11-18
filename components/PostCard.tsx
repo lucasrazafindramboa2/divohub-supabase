@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/client'
 import { ago, type Names, type Post, type Reaction } from '@/lib/types'
 import Reactions from './Reactions'
 import Avatar from './Avatar'
+import ReportDialog from './ReportDialog'
 
 type Comment = { id: string; user_id: string; parent_id: string | null; content: string; created_at: string; comment_reactions: Reaction[] }
 const KIND = { post: '', poll: 'Sondage', vote: 'Vote' }
@@ -18,6 +19,7 @@ export default function PostCard({ post, userId, names, follows, onFollow, onCha
   const [comments, setComments] = useState<Comment[]>([])
   const [replyTo, setReplyTo] = useState<Comment | null>(null)
   const [text, setText] = useState('')
+  const [reporting, setReporting] = useState(false)
   const nComments = post.comments[0]?.count ?? 0
   const myVote = post.poll_votes.find(v => v.user_id === userId)?.option_id
   const total = post.poll_votes.length
@@ -76,9 +78,12 @@ export default function PostCard({ post, userId, names, follows, onFollow, onCha
         </div>
         {post.user_id === userId
           ? <button className="ghost" onClick={remove}>Supprimer</button>
-          : <button className={follows.includes(post.user_id) ? 'ghost' : 'go'} onClick={() => onFollow(post.user_id)}>
-              {follows.includes(post.user_id) ? 'Abonné' : 'Suivre'}
-            </button>}
+          : <span className="btns">
+              <button className={follows.includes(post.user_id) ? 'ghost' : 'go'} onClick={() => onFollow(post.user_id)}>
+                {follows.includes(post.user_id) ? 'Abonné' : 'Suivre'}
+              </button>
+              <button className="ghost" onClick={() => setReporting(true)} title="Signaler cette publication" aria-label="Signaler cette publication">⚑</button>
+            </span>}
       </header>
       <p className="content">{post.content}</p>
       {post.image_url && <img className="photo" src={post.image_url} alt="" />}
@@ -121,6 +126,7 @@ export default function PostCard({ post, userId, names, follows, onFollow, onCha
           </form>
         </div>
       )}
+      {reporting && <ReportDialog type="post" targetId={post.id} label="cette publication" onClose={() => setReporting(false)} />}
     </article>
   )
 }

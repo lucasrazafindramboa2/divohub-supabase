@@ -11,12 +11,13 @@ import Groups from './Groups'
 import Profile from './Profile'
 import Wallet from './Wallet'
 import Subscription from './Subscription'
+import Admin from './Admin'
 import Avatar from './Avatar'
 import { CountriesContext } from '@/lib/countryContext'
 
 const TEXT: Record<string, string> = { like: 'a aimé votre publication', comment: 'a commenté votre publication', follow: 'a commencé à vous suivre', reply: 'a répondu à votre commentaire', friend_request: 'vous a envoyé une demande d’ami', friend_accept: 'a accepté votre demande d’ami' }
 const label = (n: Notif) => (n.type === 'reaction' ? `a réagi ${n.emoji ?? ''} à votre publication` : TEXT[n.type])
-type Tab = 'feed' | 'notifs' | 'messages' | 'groups' | 'profile' | 'wallet'
+type Tab = 'feed' | 'notifs' | 'messages' | 'groups' | 'profile' | 'wallet' | 'admin'
 
 export default function App({ userId, username }: { userId: string; username: string }) {
   const supabase = useMemo(() => createClient(), [])
@@ -35,6 +36,8 @@ export default function App({ userId, username }: { userId: string; username: st
   const [countries, setCountries] = useState<Record<string, string | null>>({})
   const [profileId, setProfileId] = useState(userId)
   const [groupOpen, setGroupOpen] = useState<{ id: string; n: number } | null>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [reportsPending, setReportsPending] = useState(0)
   const [pending, setPending] = useState(0)
   const [dm, setDm] = useState<{ id: string; n: number } | null>(null)
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
@@ -89,6 +92,11 @@ export default function App({ userId, username }: { userId: string; username: st
     return () => { supabase.removeChannel(ch) }
   }, [supabase, userId, username])
 
+  // Compte administrateur ? (la table admins n'est lisible que par son propriétaire)
+  useEffect(() => {
+    supabase.from('admins').select('user_id').eq('user_id', userId).maybeSingle().then(({ data }) => setIsAdmin(!!data))
+  }, [supabase, userId])
+
   // Retour de paiement Stripe : ouvre directement le portefeuille
   useEffect(() => { if (new URLSearchParams(window.location.search).has('wallet')) setTab('wallet') }, [])
 
@@ -110,6 +118,7 @@ export default function App({ userId, username }: { userId: string; username: st
   }
   const onUnread = useCallback((n: number) => setMsgUnread(n), [])
   const onPending = useCallback((n: number) => setPending(n), [])
+  const onReports = useCallback((n: number) => setReportsPending(n), [])
   const openProfile = (id: string) => { setProfileId(id); setTab('profile') }
   const openGroup = (id: string) => { setGroupOpen({ id, n: Date.now() }); setTab('groups') }
   const openDm = (id: string) => { setTab('messages'); setDm({ id, n: Date.now() }) }
@@ -129,6 +138,11 @@ export default function App({ userId, username }: { userId: string; username: st
           <button className={tab === 'groups' ? 'on' : ''} onClick={() => setTab('groups')}>
             Groupes{pending > 0 && <span className="badge">{pending}</span>}
           </button>
+          {isAdmin && (
+            <button className={tab === 'admin' ? 'on' : ''} onClick={() => setTab('admin')}>
+              Modération{reportsPending > 0 && <span className="badge">{reportsPending}</span>}
+            </button>
+          )}
           <button className={tab === 'wallet' ? 'on' : ''} onClick={() => setTab('wallet')}>Portefeuille</button>
           <button className={tab === 'notifs' ? 'on' : ''} onClick={() => setTab('notifs')}>
             Notifications{unread > 0 && <span className="badge">{unread}</span>}
@@ -140,7 +154,7 @@ export default function App({ userId, username }: { userId: string; username: st
         <button className="ghost" onClick={logout}>Déconnexion</button>
       </header>
 
-      <div className={tab === 'messages' || tab === 'groups' ? 'cols wide' : 'cols'}>
+      <div className={tab === 'messages' || tab === 'groups' || tab === 'admin' ? 'cols wide' : 'cols'}>
         <main>
           {tab === 'feed' && (
             <>
@@ -169,7 +183,9 @@ export default function App({ userId, username }: { userId: string; username: st
               {notifs.length === 0 && <p className="empty">Aucune notification pour l’instant.</p>}
               {notifs.map(n => (
                 <li key={n.id} className={n.read ? '' : 'new'}>
-                  <button className="plain" onClick={() => openProfile(n.actor_id)}>{names[n.actor_id] ?? '…'}</button> {label(n)}
+                  {n.type === 'moderation'
+                    ? <><strong>Modération</strong> {n.message}</>
+                    : <><button className="plain" onClick={() => openProfile(n.actor_id)}>{names[n.actor_id] ?? '…'}</button> {label(n)}</>}
                   <span className="sub"> · {ago(n.created_at)}</span>
                 </li>
               ))}
@@ -183,8 +199,13 @@ export default function App({ userId, username }: { userId: string; username: st
           <div hidden={tab !== 'groups'}>
             <Groups userId={userId} names={names} follows={follows} onFollow={toggleFollow} ver={ver} onPending={onPending} openRequest={groupOpen} />
           </div>
+          {isAdmin && (
+            <div hidden={tab !== 'admin'}>
+              <Admin names={names} onPending={onReports} onProfile={openProfile} />
+            </div>
+          )}
         </main>
-        {tab !== 'messages' && tab !== 'groups' && (
+        {tab !== 'messages' && tab !== 'groups' && tab !== 'admin' && (
           <aside>
             <h2>Personnes ({onlineIds.length} en ligne)</h2>
             {people.length === 0 && <p className="sub">Invitez un ami à créer un compte.</p>}

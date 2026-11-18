@@ -14,8 +14,8 @@ export type Story = {
   story_reactions: { user_id: string; emoji: string }[]
 }
 export type Notif = {
-  id: string; actor_id: string; type: 'like' | 'comment' | 'follow' | 'reaction' | 'reply' | 'friend_request' | 'friend_accept'
-  emoji: string | null; post_id: string | null; read: boolean; created_at: string
+  id: string; actor_id: string; type: 'like' | 'comment' | 'follow' | 'reaction' | 'reply' | 'friend_request' | 'friend_accept' | 'moderation'
+  emoji: string | null; message: string | null; post_id: string | null; read: boolean; created_at: string
 }
 
 export const ago = (d: string) => {
