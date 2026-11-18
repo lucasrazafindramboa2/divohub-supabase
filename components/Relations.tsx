@@ -58,7 +58,7 @@ export function RelationLists({ tab, rel, names, avatars, onProfile }: {
   const row = (id: string, actions: React.ReactNode) => (
     <li key={id}>
       <span className="who">
-        <Avatar url={avatars[id]} name={names[id] ?? '?'} size={34} />
+        <Avatar url={avatars[id]} name={names[id] ?? '?'} size={34} uid={id} />
         <button className="plain" onClick={() => onProfile(id)}>{names[id] ?? '…'}</button>
       </span>
       <span className="btns">{actions}</span>

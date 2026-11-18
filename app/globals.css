@@ -232,3 +232,8 @@ select { font: inherit; border: 1px solid #cfdcda; border-radius: 8px; padding: 
 .relbar .error { flex-basis: 100%; text-align: right; }
 .danger { color: #c0392b; }
 .rel-card h2 { font-size: 1.05rem; margin-bottom: 6px; }
+
+/* Drapeau à côté de la photo de profil */
+.av { position: relative; display: inline-block; flex: none; line-height: 0; }
+.av-flag { position: absolute; right: -3px; bottom: -2px; object-fit: cover; border-radius: 2px; background: #fff; box-shadow: 0 0 0 1.5px var(--card); }
+.avatar-btn { top: 4px; bottom: auto; }

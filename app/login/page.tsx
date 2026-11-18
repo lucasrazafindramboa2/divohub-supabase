@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { COUNTRIES } from '@/lib/countries'
 
 export default function Login() {
   const supabase = createClient()
@@ -10,6 +11,7 @@ export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [username, setUsername] = useState('')
+  const [nationality, setNationality] = useState('')
   const [error, setError] = useState('')
   const [info, setInfo] = useState('')
 
@@ -17,7 +19,7 @@ export default function Login() {
     e.preventDefault()
     setError(''); setInfo('')
     if (signup) {
-      const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { username } } })
+      const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { username, nationality } } })
       if (error) return setError(error.message)
       if (!data.session) return setInfo('Compte créé. Confirmez votre email puis connectez-vous.')
     } else {
@@ -32,6 +34,15 @@ export default function Login() {
       <form onSubmit={submit}>
         <h1>{signup ? 'Créer un compte' : 'Se connecter'}</h1>
         {signup && <input placeholder="Nom d'utilisateur" value={username} onChange={e => setUsername(e.target.value)} required />}
+        {signup && (
+          <>
+            <select value={nationality} onChange={e => setNationality(e.target.value)} required>
+              <option value="">Nationalité</option>
+              {COUNTRIES.map(c => <option key={c.code} value={c.code}>{c.name}</option>)}
+            </select>
+            <p className="sub">Votre nationalité s’affiche sous forme de drapeau à côté de votre photo et pourra servir à adapter les publicités.</p>
+          </>
+        )}
         <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} required />
         <input type="password" placeholder="Mot de passe (6 caractères min.)" minLength={6} value={password} onChange={e => setPassword(e.target.value)} required />
         {error && <p className="error">{error}</p>}

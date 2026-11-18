@@ -12,6 +12,7 @@ import Profile from './Profile'
 import Wallet from './Wallet'
 import Subscription from './Subscription'
 import Avatar from './Avatar'
+import { CountriesContext } from '@/lib/countryContext'
 
 const TEXT: Record<string, string> = { like: 'a aimé votre publication', comment: 'a commenté votre publication', follow: 'a commencé à vous suivre', reply: 'a répondu à votre commentaire', friend_request: 'vous a envoyé une demande d’ami', friend_accept: 'a accepté votre demande d’ami' }
 const label = (n: Notif) => (n.type === 'reaction' ? `a réagi ${n.emoji ?? ''} à votre publication` : TEXT[n.type])
@@ -31,6 +32,7 @@ export default function App({ userId, username }: { userId: string; username: st
   const [tick, setTick] = useState(0)
   const [ver, setVer] = useState(0)
   const [avatars, setAvatars] = useState<Record<string, string | null>>({})
+  const [countries, setCountries] = useState<Record<string, string | null>>({})
   const [profileId, setProfileId] = useState(userId)
   const [groupOpen, setGroupOpen] = useState<{ id: string; n: number } | null>(null)
   const [pending, setPending] = useState(0)
@@ -42,11 +44,12 @@ export default function App({ userId, username }: { userId: string; username: st
       supabase.from('posts')
         .select('*, post_reactions(user_id,emoji), comments(count), poll_options(id,label,position), poll_votes(user_id,option_id)')
         .is('group_id', null).order('created_at', { ascending: false }).limit(50),
-      supabase.from('profiles').select('id,username,avatar_url'),
+      supabase.from('profiles').select('id,username,avatar_url,nationality'),
     ])
     setPosts((p.data as Post[]) ?? [])
     setNames(Object.fromEntries((n.data ?? []).map(x => [x.id, x.username])))
     setAvatars(Object.fromEntries((n.data ?? []).map(x => [x.id, x.avatar_url])))
+    setCountries(Object.fromEntries((n.data ?? []).map(x => [x.id, x.nationality])))
   }
   const loadFollows = async () => {
     const { data } = await supabase.from('follows').select('following_id').eq('follower_id', userId)
@@ -114,6 +117,7 @@ export default function App({ userId, username }: { userId: string; username: st
   const people = Object.entries(names).filter(([id]) => id !== userId)
 
   return (
+    <CountriesContext.Provider value={countries}>
     <div className="shell">
       <header className="top">
         <h1>Cercle</h1>
@@ -131,7 +135,7 @@ export default function App({ userId, username }: { userId: string; username: st
           </button>
         </nav>
         <button className="me" onClick={() => openProfile(userId)} title="Mon profil">
-          <Avatar url={avatars[userId]} name={username} size={28} /><span className="me-name">{username}</span>
+          <Avatar url={avatars[userId]} name={username} size={28} uid={userId} /><span className="me-name">{username}</span>
         </button>
         <button className="ghost" onClick={logout}>Déconnexion</button>
       </header>
@@ -189,7 +193,7 @@ export default function App({ userId, username }: { userId: string; username: st
                 <li key={id}>
                   <span className="who">
                     <span className={onlineIds.includes(id) ? 'dot' : 'dot off'} />
-                    <Avatar url={avatars[id]} name={name} size={26} />
+                    <Avatar url={avatars[id]} name={name} size={26} uid={id} />
                     <button className="plain" onClick={() => openProfile(id)}>{name}</button>
                   </span>
                   <span className="btns">
@@ -205,5 +209,6 @@ export default function App({ userId, username }: { userId: string; username: st
         )}
       </div>
     </div>
+    </CountriesContext.Provider>
   )
 }

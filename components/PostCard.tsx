@@ -68,7 +68,7 @@ export default function PostCard({ post, userId, names, follows, onFollow, onCha
     <article className="card">
       <header className="post-head">
         <div className="author">
-          <Avatar url={avatars?.[post.user_id]} name={names[post.user_id] ?? '?'} size={34} />
+          <Avatar url={avatars?.[post.user_id]} name={names[post.user_id] ?? '?'} size={34} uid={post.user_id} />
           {onProfile
             ? <button className="plain" onClick={() => onProfile(post.user_id)}>{names[post.user_id] ?? '…'}</button>
             : <strong>{names[post.user_id] ?? '…'}</strong>}

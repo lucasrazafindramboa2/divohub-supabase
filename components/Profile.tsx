@@ -9,7 +9,7 @@ import PostCard from './PostCard'
 import { useRelations } from '@/lib/useRelations'
 import { FriendActions, RelationBar, RelationLists } from './Relations'
 
-type Basic = { id: string; username: string; avatar_url: string | null; is_private: boolean }
+type Basic = { id: string; username: string; avatar_url: string | null; is_private: boolean; nationality: string | null }
 type Details = { first_name: string | null; last_name: string | null; gender: string | null; nationality: string | null; cover_url: string | null }
 type Photo = { id: string; kind: 'avatar' | 'cover'; url: string; created_at: string }
 const GENDERS: Record<string, string> = { homme: 'Homme', femme: 'Femme', autre: 'Autre', non_precise: 'Non précisé' }
@@ -45,7 +45,7 @@ export default function Profile({ profileId, userId, onChanged, names, avatars, 
 
   const load = useCallback(async () => {
     const [b, det, ph] = await Promise.all([
-      supabase.from('profiles').select('id,username,avatar_url,is_private').eq('id', profileId).single(),
+      supabase.from('profiles').select('id,username,avatar_url,is_private,nationality').eq('id', profileId).single(),
       supabase.from('profile_details').select('*').eq('user_id', profileId).maybeSingle(),
       supabase.from('profile_photos').select('id,kind,url,created_at').eq('user_id', profileId).order('created_at', { ascending: false }),
     ])
@@ -74,7 +74,7 @@ export default function Profile({ profileId, userId, onChanged, names, avatars, 
   function startEdit() {
     setForm({
       first_name: d?.first_name ?? '', last_name: d?.last_name ?? '', gender: d?.gender ?? 'non_precise',
-      nationality: d?.nationality ?? '', is_private: basic?.is_private ?? false,
+      nationality: basic?.nationality ?? '', is_private: basic?.is_private ?? false,
     })
     setEditing(true)
   }
@@ -84,9 +84,9 @@ export default function Profile({ profileId, userId, onChanged, names, avatars, 
     setBusy(true); setError('')
     const a = await supabase.from('profile_details').upsert({
       user_id: userId, first_name: form.first_name.trim() || null, last_name: form.last_name.trim() || null,
-      gender: form.gender, nationality: form.nationality || null, updated_at: new Date().toISOString(),
+      gender: form.gender, updated_at: new Date().toISOString(),
     }, { onConflict: 'user_id' })
-    const b = await supabase.from('profiles').update({ is_private: form.is_private }).eq('id', userId)
+    const b = await supabase.from('profiles').update({ is_private: form.is_private, nationality: form.nationality || null }).eq('id', userId)
     setBusy(false)
     if (a.error || b.error) return setError((a.error ?? b.error)!.message)
     setEditing(false); await load(); onChanged()
@@ -143,7 +143,7 @@ export default function Profile({ profileId, userId, onChanged, names, avatars, 
   const person = (id: string, extra?: React.ReactNode) => (
     <li key={id}>
       <span className="who">
-        <Avatar url={avatars[id]} name={names[id] ?? '?'} size={34} />
+        <Avatar url={avatars[id]} name={names[id] ?? '?'} size={34} uid={id} />
         <button className="plain" onClick={() => onProfile(id)}>{names[id] ?? '…'}</button>
       </span>
       {extra}
@@ -163,17 +163,17 @@ export default function Profile({ profileId, userId, onChanged, names, avatars, 
         </div>
         <div className="pbody">
           <div className="pavatar">
-            <Avatar url={basic.avatar_url} name={basic.username} size={96} />
+            <Avatar url={basic.avatar_url} name={basic.username} size={96} uid={basic.id} />
             {own && <label className="avatar-btn" title="Changer la photo de profil">✎{fileInput('avatar')}</label>}
           </div>
           <div className="pinfo">
             <h2>{fullName || basic.username}</h2>
             <p className="sub">@{basic.username} · <span className="tag">{basic.is_private ? 'Profil privé' : 'Profil public'}</span></p>
             {d?.gender && d.gender !== 'non_precise' && <p className="sub">{GENDERS[d.gender]}</p>}
-            {d?.nationality && (
+            {basic.nationality && (
               <p className="nat">
-                <img className="flag" src={flagUrl(d.nationality)} srcSet={`${flagUrl(d.nationality, 80)} 2x`} alt="" width={24} height={18} />
-                {countryName(d.nationality)}
+                <img className="flag" src={flagUrl(basic.nationality)} srcSet={`${flagUrl(basic.nationality, 80)} 2x`} alt="" width={24} height={18} />
+                {countryName(basic.nationality)}
               </p>
             )}
           </div>
@@ -183,7 +183,7 @@ export default function Profile({ profileId, userId, onChanged, names, avatars, 
         {error && <p className="error">{error}</p>}
       </section>
 
-      {locked && <p className="empty">Ce profil est privé. Seuls le nom et la photo de profil sont visibles.</p>}
+      {locked && <p className="empty">Ce profil est privé. Seuls le nom, la photo et le drapeau sont visibles.</p>}
 
       {own && editing && (
         <form className="card pform" onSubmit={save}>
@@ -206,7 +206,7 @@ export default function Profile({ profileId, userId, onChanged, names, avatars, 
           <label className="choice-row"><input type="radio" checked={!form.is_private} onChange={() => setForm({ ...form, is_private: false })} />
             <span><strong>Profil public</strong><br /><span className="sub">Tout le monde voit vos informations et votre galerie.</span></span></label>
           <label className="choice-row"><input type="radio" checked={form.is_private} onChange={() => setForm({ ...form, is_private: true })} />
-            <span><strong>Profil privé</strong><br /><span className="sub">Seuls votre nom et votre photo de profil restent visibles.</span></span></label>
+            <span><strong>Profil privé</strong><br /><span className="sub">Seuls votre nom, votre photo et votre drapeau restent visibles.</span></span></label>
           <div className="actions">
             <button type="button" className="ghost" onClick={() => setEditing(false)}>Annuler</button>
             <button className="go" disabled={busy}>{busy ? 'Enregistrement…' : 'Enregistrer'}</button>
