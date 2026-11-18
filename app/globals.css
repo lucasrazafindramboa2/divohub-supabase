@@ -237,3 +237,12 @@ select { font: inherit; border: 1px solid #cfdcda; border-radius: 8px; padding: 
 .av { position: relative; display: inline-block; flex: none; line-height: 0; }
 .av-flag { position: absolute; right: -3px; bottom: -2px; object-fit: cover; border-radius: 2px; background: #fff; box-shadow: 0 0 0 1.5px var(--card); }
 .avatar-btn { top: 4px; bottom: auto; }
+
+/* Authentification */
+.google-btn { display: flex; align-items: center; justify-content: center; gap: 10px; background: #fff; border: 1px solid #cfdcda; color: var(--text); padding: 10px; border-radius: 8px; font-weight: 600; }
+.google-btn:hover { background: var(--bg); }
+.divider { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: .85rem; }
+.divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+.code-input { text-align: center; font-size: 1.5rem; letter-spacing: .4em; }
+.login button[type=submit]:disabled { opacity: .6; cursor: wait; }
+.link:disabled { opacity: .5; cursor: default; text-decoration: none; }

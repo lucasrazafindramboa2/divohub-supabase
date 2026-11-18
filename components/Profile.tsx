@@ -127,7 +127,8 @@ export default function Profile({ profileId, userId, onChanged, names, avatars, 
   }
 
   if (!basic) return <p className="empty">Chargement…</p>
-  const locked = !own && basic.is_private
+  // Profil privé : seuls les amis acceptés (et le propriétaire) voient le contenu
+  const locked = !own && basic.is_private && !rel.friends.includes(profileId)
   const fullName = [d?.first_name, d?.last_name].filter(Boolean).join(' ')
   const shown = photos.filter(p => filter === 'all' || p.kind === filter)
   const isCurrent = (p: Photo) => p.url === (p.kind === 'avatar' ? basic.avatar_url : d?.cover_url)
@@ -183,7 +184,7 @@ export default function Profile({ profileId, userId, onChanged, names, avatars, 
         {error && <p className="error">{error}</p>}
       </section>
 
-      {locked && <p className="empty">Ce profil est privé. Seuls le nom, la photo et le drapeau sont visibles.</p>}
+      {locked && <p className="empty">Ce profil est privé. Seuls ses amis acceptés peuvent voir ses informations, ses publications et ses photos. Envoyez-lui une demande d’ami pour y accéder.</p>}
 
       {own && editing && (
         <form className="card pform" onSubmit={save}>
@@ -204,9 +205,9 @@ export default function Profile({ profileId, userId, onChanged, names, avatars, 
             </label>
           </div>
           <label className="choice-row"><input type="radio" checked={!form.is_private} onChange={() => setForm({ ...form, is_private: false })} />
-            <span><strong>Profil public</strong><br /><span className="sub">Tout le monde voit vos informations et votre galerie.</span></span></label>
+            <span><strong>Profil public</strong><br /><span className="sub">Tout le monde peut consulter votre profil et vos publications, sauf les personnes que vous avez bloquées.</span></span></label>
           <label className="choice-row"><input type="radio" checked={form.is_private} onChange={() => setForm({ ...form, is_private: true })} />
-            <span><strong>Profil privé</strong><br /><span className="sub">Seuls votre nom, votre photo et votre drapeau restent visibles.</span></span></label>
+            <span><strong>Profil privé</strong><br /><span className="sub">Seuls vos amis acceptés voient vos informations, publications et photos. Votre nom, photo et drapeau restent visibles.</span></span></label>
           <div className="actions">
             <button type="button" className="ghost" onClick={() => setEditing(false)}>Annuler</button>
             <button className="go" disabled={busy}>{busy ? 'Enregistrement…' : 'Enregistrer'}</button>
