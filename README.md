@@ -13,7 +13,18 @@ plan payant:
 hebergement code
 hebergement supabase
 livekit
-gmail
+
++gmail:-----------------
++Ã€ faire hors code
++ExÃ©cuter auth.sql dans le SQL Editor de Supabase, aprÃ¨s privacy.sql. Sans lui, aucun profil nâ€™est crÃ©Ã© aprÃ¨s la confirmation.
++Google Cloud Console : crÃ©ez un OAuth client ID de type Web application. Lâ€™URI de redirection autorisÃ©e est https://<ref>.supabase.co/auth/v1/callback. Copiez le Client ID et le Client Secret dans Supabase â†’ Authentication â†’ Providers â†’ Google.
++Supabase â†’ Authentication â†’ URL Configuration : indiquez le Site URL et ajoutez http://localhost:3000/auth/callback ainsi que lâ€™URL de production dans les Redirect URLs.
++Supabase â†’ Providers â†’ Email : activez Confirm email. Sans cela, signUp renvoie directement une session, et votre code saute lâ€™Ã©tape du code (câ€™est le cas data.session â†’ goHome()).
++Template Â« Confirm signup Â» : remplacez le lien par {{ .Token }}, sinon lâ€™utilisateur reÃ§oit un lien au lieu dâ€™un code.
++SMTP personnalisÃ© (Resend, Brevo, etc.) : le SMTP par dÃ©faut de Supabase est limitÃ© Ã  quelques e-mails par heure, ce qui bloquera vos inscriptions.
++.env.local : NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY et NEXT_PUBLIC_SITE_URL (surtout en production).
+
+
 
 stripe:
 Visa – Paiement accepté
