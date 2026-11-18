@@ -6,6 +6,8 @@ import { COUNTRIES, countryName, flagUrl } from '@/lib/countries'
 import { POST_SELECT, type Post } from '@/lib/types'
 import Avatar from './Avatar'
 import PostCard from './PostCard'
+import { useRelations } from '@/lib/useRelations'
+import { FriendActions, RelationBar, RelationLists } from './Relations'
 
 type Basic = { id: string; username: string; avatar_url: string | null; is_private: boolean }
 type Details = { first_name: string | null; last_name: string | null; gender: string | null; nationality: string | null; cover_url: string | null }
@@ -13,7 +15,7 @@ type Photo = { id: string; kind: 'avatar' | 'cover'; url: string; created_at: st
 const GENDERS: Record<string, string> = { homme: 'Homme', femme: 'Femme', autre: 'Autre', non_precise: 'Non précisé' }
 
 type GroupRef = { id: string; name: string; is_private: boolean; role: string }
-type Tab = 'posts' | 'friends' | 'groups' | 'following' | 'followers' | 'photos'
+type Tab = 'posts' | 'friends' | 'groups' | 'following' | 'followers' | 'photos' | 'requests' | 'close' | 'blocked'
 const norm = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
 
 export default function Profile({ profileId, userId, onChanged, names, avatars, follows, onFollow, onProfile, onOpenGroup, ver }: {
@@ -38,6 +40,8 @@ export default function Profile({ profileId, userId, onChanged, names, avatars, 
   const [followers, setFollowers] = useState<string[]>([])
   const [groups, setGroups] = useState<GroupRef[]>([])
   const [q, setQ] = useState('')
+  const [profileFriends, setProfileFriends] = useState<string[]>([])
+  const rel = useRelations(userId, onChanged)
 
   const load = useCallback(async () => {
     const [b, det, ph] = await Promise.all([
@@ -51,10 +55,11 @@ export default function Profile({ profileId, userId, onChanged, names, avatars, 
 
   // Publications, abonnements et groupes (filtrés par les règles de sécurité de la base)
   const loadSocial = useCallback(async () => {
-    const [po, fo, gr] = await Promise.all([
+    const [po, fo, gr, fr] = await Promise.all([
       supabase.from('posts').select(POST_SELECT).eq('user_id', profileId).order('created_at', { ascending: false }).limit(50),
       supabase.from('follows').select('follower_id,following_id').or(`follower_id.eq.${profileId},following_id.eq.${profileId}`),
       supabase.from('group_members').select('role, groups(id,name,is_private)').eq('user_id', profileId),
+      supabase.from('friendships').select('user_a,user_b').or(`user_a.eq.${profileId},user_b.eq.${profileId}`),
     ])
     setPosts((po.data as Post[]) ?? [])
     const rows = fo.data ?? []
@@ -62,8 +67,9 @@ export default function Profile({ profileId, userId, onChanged, names, avatars, 
     setFollowers(rows.filter(r => r.following_id === profileId).map(r => r.follower_id))
     const g = (gr.data ?? []) as unknown as { role: string; groups: Omit<GroupRef, 'role'> | null }[]
     setGroups(g.filter(x => x.groups).map(x => ({ ...x.groups!, role: x.role })))
+    setProfileFriends((fr.data ?? []).map(r => (r.user_a === profileId ? r.user_b : r.user_a)))
   }, [profileId, supabase])
-  useEffect(() => { loadSocial() }, [loadSocial, ver, follows])
+  useEffect(() => { loadSocial() }, [loadSocial, ver, follows, rel.version])
 
   function startEdit() {
     setForm({
@@ -129,16 +135,18 @@ export default function Profile({ profileId, userId, onChanged, names, avatars, 
     <input type="file" accept="image/*" hidden onChange={e => { addPhoto(kind, e.target.files?.[0]); e.target.value = '' }} />
   )
 
-  const friends = following.filter(id => followers.includes(id))
+  const friends = profileFriends
   const shownFriends = friends.filter(id => norm(names[id] ?? '').includes(norm(q.trim())))
-  const TABS = [['posts', 'Publications', posts.length], ['friends', 'Amis', friends.length], ['groups', 'Groupes', groups.length],
-    ['following', 'Abonnements', following.length], ['followers', 'Abonnés', followers.length], ['photos', 'Photos', photos.length]] as const
-  const person = (id: string) => (
+  const TABS: [Tab, string, number][] = [['posts', 'Publications', posts.length], ['friends', 'Amis', friends.length], ['groups', 'Groupes', groups.length],
+    ['following', 'Abonnements', following.length], ['followers', 'Abonnés', followers.length], ['photos', 'Photos', photos.length],
+    ...(own ? [['requests', 'Demandes', rel.incoming.length], ['close', 'Proches', rel.close.length], ['blocked', 'Bloqués', rel.blocked.length]] as [Tab, string, number][] : [])]
+  const person = (id: string, extra?: React.ReactNode) => (
     <li key={id}>
       <span className="who">
         <Avatar url={avatars[id]} name={names[id] ?? '?'} size={34} />
         <button className="plain" onClick={() => onProfile(id)}>{names[id] ?? '…'}</button>
       </span>
+      {extra}
       {id !== userId && (
         <button className={follows.includes(id) ? 'ghost' : 'go'} onClick={() => onFollow(id)}>
           {follows.includes(id) ? 'Abonné' : 'Suivre'}
@@ -170,6 +178,7 @@ export default function Profile({ profileId, userId, onChanged, names, avatars, 
             )}
           </div>
           {own && !editing && <button className="go" onClick={startEdit}>Modifier le profil</button>}
+          {!own && <RelationBar profileId={profileId} rel={rel} follows={follows} onFollow={onFollow} />}
         </div>
         {error && <p className="error">{error}</p>}
       </section>
@@ -229,7 +238,7 @@ export default function Profile({ profileId, userId, onChanged, names, avatars, 
               <ul className="people">
                 {friends.length === 0 && <li className="sub">Aucun ami pour l’instant. Deux personnes deviennent amies en s’abonnant l’une à l’autre.</li>}
                 {friends.length > 0 && shownFriends.length === 0 && <li className="sub">Aucun ami ne correspond à « {q} ».</li>}
-                {shownFriends.map(person)}
+                {shownFriends.map(id => person(id, own ? <FriendActions id={id} rel={rel} /> : undefined))}
               </ul>
             </section>
           )}
@@ -253,15 +262,16 @@ export default function Profile({ profileId, userId, onChanged, names, avatars, 
           {tab === 'following' && (
             <ul className="card people">
               {following.length === 0 && <li className="sub">Aucun abonnement.</li>}
-              {following.map(person)}
+              {following.map(id => person(id))}
             </ul>
           )}
           {tab === 'followers' && (
             <ul className="card people">
               {followers.length === 0 && <li className="sub">Aucun abonné.</li>}
-              {followers.map(person)}
+              {followers.map(id => person(id))}
             </ul>
           )}
+          {own && <RelationLists tab={tab} rel={rel} names={names} avatars={avatars} onProfile={onProfile} />}
         </>
       )}
 

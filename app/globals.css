@@ -220,3 +220,15 @@ select { font: inherit; border: 1px solid #cfdcda; border-radius: 8px; padding: 
 .tx-right { display: flex; align-items: center; gap: 10px; }
 .tx-amount { font-weight: 700; }
 .tx-amount.plus { color: var(--accent); }
+
+/* Abonnement */
+.sub-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.tag.ok { background: #d8f3e3; color: #17794a; }
+.tag.off { background: #fbe4e1; color: #c0392b; }
+.wallet .actions { display: flex; gap: 8px; margin: 0; }
+
+/* Relations */
+.relbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; justify-content: flex-end; padding-top: 10px; }
+.relbar .error { flex-basis: 100%; text-align: right; }
+.danger { color: #c0392b; }
+.rel-card h2 { font-size: 1.05rem; margin-bottom: 6px; }

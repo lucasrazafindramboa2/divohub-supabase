@@ -10,9 +10,10 @@ import Messages from './Messages'
 import Groups from './Groups'
 import Profile from './Profile'
 import Wallet from './Wallet'
+import Subscription from './Subscription'
 import Avatar from './Avatar'
 
-const TEXT: Record<string, string> = { like: 'a aimé votre publication', comment: 'a commenté votre publication', follow: 'a commencé à vous suivre', reply: 'a répondu à votre commentaire' }
+const TEXT: Record<string, string> = { like: 'a aimé votre publication', comment: 'a commenté votre publication', follow: 'a commencé à vous suivre', reply: 'a répondu à votre commentaire', friend_request: 'vous a envoyé une demande d’ami', friend_accept: 'a accepté votre demande d’ami' }
 const label = (n: Notif) => (n.type === 'reaction' ? `a réagi ${n.emoji ?? ''} à votre publication` : TEXT[n.type])
 type Tab = 'feed' | 'notifs' | 'messages' | 'groups' | 'profile' | 'wallet'
 
@@ -150,16 +151,21 @@ export default function App({ userId, username }: { userId: string; username: st
             </>
           )}
           {tab === 'profile' && (
-            <Profile profileId={profileId} userId={userId} onChanged={loadFeed} names={names} avatars={avatars}
+            <Profile profileId={profileId} userId={userId} onChanged={() => { loadFeed(); loadFollows(); loadStories() }} names={names} avatars={avatars}
               follows={follows} onFollow={toggleFollow} onProfile={openProfile} onOpenGroup={openGroup} ver={ver} />
           )}
-          {tab === 'wallet' && <Wallet userId={userId} />}
+          {tab === 'wallet' && (
+            <div className="wallet">
+              <Subscription userId={userId} />
+              <Wallet userId={userId} />
+            </div>
+          )}
           {tab === 'notifs' && (
             <ul className="notifs">
               {notifs.length === 0 && <p className="empty">Aucune notification pour l’instant.</p>}
               {notifs.map(n => (
                 <li key={n.id} className={n.read ? '' : 'new'}>
-                  <strong>{names[n.actor_id] ?? '…'}</strong> {label(n)}
+                  <button className="plain" onClick={() => openProfile(n.actor_id)}>{names[n.actor_id] ?? '…'}</button> {label(n)}
                   <span className="sub"> · {ago(n.created_at)}</span>
                 </li>
               ))}

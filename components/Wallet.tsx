@@ -6,6 +6,7 @@ import { CURRENCY, MAX_CENTS, MIN_CENTS } from '@/lib/wallet-config'
 type Tx = { id: string; type: string; amount_cents: number; currency: string; status: 'pending' | 'completed' | 'failed'; created_at: string }
 type Notice = { kind: 'info' | 'ok' | 'error'; text: string }
 const STATUS = { pending: 'En attente', completed: 'Confirmé', failed: 'Échoué' }
+const TYPE: Record<string, string> = { topup: 'Recharge', subscription: 'Abonnement', subscription_renewal: 'Renouvellement de l’abonnement' }
 const PRESETS = [500, 1000, 2000, 5000]
 const money = (cents: number, currency = CURRENCY) =>
   new Intl.NumberFormat('fr-FR', { style: 'currency', currency: currency.toUpperCase() }).format(cents / 100)
@@ -108,12 +109,12 @@ export default function Wallet({ userId }: { userId: string }) {
           {txs.map(t => (
             <li key={t.id}>
               <span>
-                <strong>Recharge</strong><br />
+                <strong>{TYPE[t.type] ?? t.type}</strong><br />
                 <span className="sub">{new Date(t.created_at).toLocaleString('fr-FR', { dateStyle: 'medium', timeStyle: 'short' })}</span>
               </span>
               <span className="tx-right">
-                <span className={t.status === 'completed' ? 'tx-amount plus' : 'tx-amount'}>
-                  {t.status === 'completed' ? '+' : ''}{money(t.amount_cents, t.currency)}
+                <span className={t.status === 'completed' && t.type === 'topup' ? 'tx-amount plus' : 'tx-amount'}>
+                  {t.type === 'topup' ? (t.status === 'completed' ? '+' : '') : '−'}{money(t.amount_cents, t.currency)}
                 </span>
                 <span className="tag">{STATUS[t.status]}</span>
               </span>
